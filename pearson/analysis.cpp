@@ -11,21 +11,29 @@ Author: David Holmqvist <daae19@student.bth.se>
 
 namespace Analysis {
 
-std::vector<double> correlation_coefficients(std::vector<Vector> datasets)
+std::vector<double> correlation_coefficients(const std::vector<Vector>& datasets)
 {
     std::vector<double> result {};
 
-    for (auto sample1 { 0 }; sample1 < datasets.size() - 1; sample1++) {
+    // Each dataset has the same normalization in every pair: prepare it once.
+    std::vector<Vector> normalized;
+    normalized.reserve(datasets.size());
+    for (const auto& dataset : datasets) {
+        auto centered { dataset - dataset.mean() };
+        normalized.push_back(centered / centered.magnitude());
+    }
+
+    for (auto sample1 { 0 }; sample1 + 1 < datasets.size(); sample1++) {
         for (auto sample2 { sample1 + 1 }; sample2 < datasets.size(); sample2++) {
-            auto corr { pearson(datasets[sample1], datasets[sample2]) };
-            result.push_back(corr);
+            auto corr { normalized[sample1].dot(normalized[sample2]) };
+            result.push_back(std::max(std::min(corr, 1.0), -1.0));
         }
     }
 
     return result;
 }
 
-double pearson(Vector vec1, Vector vec2)
+double pearson(const Vector& vec1, const Vector& vec2)
 {
     auto x_mean { vec1.mean() };
     auto y_mean { vec2.mean() };

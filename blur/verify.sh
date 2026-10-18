@@ -1,25 +1,23 @@
-#!/bin/bash
-
-echo "NOTE: this script relies on the binaries blur and blur_par to exist"
-
-status=0
-red=$(tput setaf 1)
-reset=$(tput sgr0)
-
-for thread in 1 2 4 8 16 32
-do
-    for image in im1 im2 im3 im4
-    do
-        ./blur_par 15 "data/$image.ppm" "./data_o/blur_${image}_par.ppm" $thread
-
-        if ! cmp -s "./data_o/blur_${image}.ppm" "./data_o/blur_${image}_par.ppm"
-        then
-            echo "${red}Error: Incongruent output data detected when blurring image $image.ppm with $thread thread(s)${reset}"
-            status=1
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+threads="${THREAD_COUNTS:-1 2 4 8 16 32}"
+for item in im1 im2 im3 im4; do
+    ./blur 15 "data/$item.ppm" "$tmp/reference.ppm"
+    baseline="../../baseline/blur/data_o/${item}_baseline.ppm"
+    if [[ -f "$baseline" ]] && ! cmp -s "$baseline" "$tmp/reference.ppm"; then
+        echo "ERROR: sequential output differs from original saved baseline: $item" >&2
+        exit 1
+    fi
+    for count in $threads; do
+        ./blur_par 15 "data/$item.ppm" "$tmp/parallel.ppm" "$count"
+        if ! cmp -s "$tmp/reference.ppm" "$tmp/parallel.ppm"; then
+            echo "ERROR: blur $item differs with $count threads" >&2
+            exit 1
         fi
-
-        rm "./data_o/blur_${image}_par.ppm"
+        echo "PASS blur $item threads=$count"
     done
 done
-
-exit $status
+echo "All blur correctness checks passed."

@@ -1,0 +1,10 @@
+
+*.o
+*.d
+/blur/blur
+/blur/blur_par
+/pearson/pearson
+/pearson/pearson_par
+/pearson/verify
+/blur/data_o/
+/pearson/data_o/

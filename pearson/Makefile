@@ -1,24 +1,25 @@
-# Author: David Holmqvist <daae19@student.bth.se>
+CXX = g++
+CXXFLAGS = -std=c++17 -O3 -g -Wall -Wextra -ffp-contract=off -pthread
+DEPFLAGS = -MMD -MP
+CC = gcc
+CFLAGS = -O2 -Wall -Wextra
 
-CXX=g++-13
-CXXFLAGS=-std=c++17 -g -Wunused -Wall -Wunused
+.PHONY: all clean
+all: pearson pearson_par verify
 
-all: pearson verify
+pearson: pearson.o vector.o dataset.o analysis.o
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
-pearson: vector dataset analysis pearson.cpp 
-	$(CXX) $(CXXFLAGS) pearson.cpp vector.o dataset.o analysis.o -o pearson
-
-analysis: vector analysis.hpp analysis.cpp
-	$(CXX) $(CXXFLAGS) -c analysis.cpp -o analysis.o
-
-dataset: vector dataset.hpp dataset.cpp
-	$(CXX) $(CXXFLAGS) -c dataset.cpp -o dataset.o
-
-vector: vector.hpp vector.cpp
-	$(CXX) $(CXXFLAGS) -c vector.cpp -o vector.o
+pearson_par: pearson_par.o vector.o dataset.o analysis.o analysis_par.o
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
 verify: verify.c
-	$(CC) verify.c -o verify
+	$(CC) $(CFLAGS) $< -o $@
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 clean:
-	rm -rf verify pearson *.o *.dSYM 2> /dev/null
+	rm -f pearson pearson_par verify *.o *.d
+
+-include $(wildcard *.d)
